@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -70,17 +69,22 @@ const MentorPage = () => {
       try {
         const params = new URLSearchParams();
         params.append("page", page.toString());
-        params.append("limit", "6");
+        params.append("limit", "9");
         if (category) params.append("category", category);
         if (courseName) params.append("courseName", courseName);
 
         const { data } = await axios.get(
-          `http://localhost:9999/api/admin/approved-mentors?${params.toString()}`,
+          `http://localhost:9999/api/admin/mentors/approved?${params.toString()}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        setMentors(data.data || []);
-        setPagination(data.pagination);
+        setMentors(data.mentors || []);
+        setPagination({
+          total: data.total || 0,
+          page: data.page || 1,
+          limit: data.limit || 9,
+          totalPages: data.total ? Math.ceil(data.total / data.limit) : 1,
+        });
       } catch (error) {
         console.error("Error fetching mentors:", error);
       } finally {

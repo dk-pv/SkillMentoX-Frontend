@@ -8,11 +8,11 @@ import Step4Review from "./Step4Review";
 import NavigationFooter from "./NavigationFooter";
 import "aos/dist/aos.css";
 import type { Aos } from "aos";
-import axios, { AxiosError } from "axios";
 import { setRole, createProfileApi } from "@/redux/Slices/profileSlice";
 import { useRouter } from "next/navigation";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios, {  AxiosError} from "axios";
 
 declare global {
   interface Window {

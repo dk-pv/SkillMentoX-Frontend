@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
@@ -47,28 +46,27 @@ const MentorDetailsPage = () => {
   const [mentor, setMentor] = useState<Mentor | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token || !id) return;
+ useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token || !id) return;
 
-    const fetchMentor = async () => {
-      try {
-        const { data } = await axios.get(
-          `http://localhost:9999/api/admin/mentor/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setMentor(data.data);
-      } catch (error: any) {
-        console.error("Error fetching mentor details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMentor = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:9999/api/admin/mentors/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMentor(data.mentor); // <-- THIS IS THE FIX
+    } catch (error) {
+      console.error("Error fetching mentor details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchMentor();
-  }, [id]);
+  fetchMentor();
+}, [id]);
+
 
   if (loading) {
     return (
@@ -107,7 +105,7 @@ const MentorDetailsPage = () => {
   }
 
   const getVerificationBadgeColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "approved":
         return "bg-green-100 text-green-700";
       case "rejected":
@@ -189,9 +187,13 @@ const MentorDetailsPage = () => {
                   mentor.verificationStatus
                 )}`}
               >
-                {mentor.verificationStatus.charAt(0).toUpperCase() +
-                  mentor.verificationStatus.slice(1)}
+                {mentor.verificationStatus
+                  ? mentor.verificationStatus.charAt(0).toUpperCase() +
+                    mentor.verificationStatus.slice(1)
+                  : "Unknown"}{" "}
+                {/* fallback text if undefined */}
               </div>
+
               {(mentor.linkedin || mentor.github || mentor.portfolio) && (
                 <div className="flex gap-2">
                   {mentor.linkedin && (

@@ -1,6 +1,6 @@
 
 import RequestsPage from "./showRequest";
-export default function ProfilePage() {
+export default function () {
   return (
     <div>
       <RequestsPage />

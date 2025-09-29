@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
@@ -54,12 +53,13 @@ const MentorDetailsPage = () => {
     const fetchMentor = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:9999/api/admin/mentor/${id}`,
+          `http://localhost:9999/api/admin/mentors/${id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        setMentor(data.data);
+        console.log("Mentor details response:", data); // for debugging
+        setMentor(data.mentor); // <-- fix here
       } catch (error: any) {
         console.error("Error fetching mentor details:", error);
       } finally {
@@ -107,7 +107,7 @@ const MentorDetailsPage = () => {
   }
 
   const getVerificationBadgeColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "approved":
         return "bg-green-100 text-green-700";
       case "rejected":
@@ -189,9 +189,13 @@ const MentorDetailsPage = () => {
                   mentor.verificationStatus
                 )}`}
               >
-                {mentor.verificationStatus.charAt(0).toUpperCase() +
-                  mentor.verificationStatus.slice(1)}
+                {mentor.verificationStatus
+                  ? mentor.verificationStatus.charAt(0).toUpperCase() +
+                    mentor.verificationStatus.slice(1)
+                  : "Unknown"}{" "}
+                {/* fallback text if undefined */}
               </div>
+
               {(mentor.linkedin || mentor.github || mentor.portfolio) && (
                 <div className="flex gap-2">
                   {mentor.linkedin && (

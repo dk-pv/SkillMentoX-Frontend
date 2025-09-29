@@ -12,68 +12,60 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface MentorRequest {
+interface Mentor {
   _id: string;
-  mentorId: {
-    _id: string;
-    fullName: string;
-    currentRole: string;
-    email: string;
-  };
+  fullName: string;
+  currentRole: string;
+  email: string;
   status: string;
   createdAt: string;
 }
 
 const RequestsPage = () => {
-  const [requests, setRequests] = useState<MentorRequest[]>([]);
+  const [requests, setRequests] = useState<Mentor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const router = useRouter();
 
-  const fetchRequests = async (page = 1) => {
+  // 🔹 fetch pending mentors
+  const fetchRequests = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
 
       const { data } = await axios.get(
-        `http://localhost:9999/api/admin/mentor-requests?page=${page}&limit=10`,
+        `http://localhost:9999/api/admin/mentors/pending`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      setRequests(data.data);
-      setTotalPages(data.pagination.totalPages);
+      setRequests(data.mentors || []);
     } catch (error: any) {
       console.error("Error fetching requests:", error);
     }
   };
 
   useEffect(() => {
-    fetchRequests(currentPage);
-  }, [currentPage]);
+    fetchRequests();
+  }, []);
 
-  // 🔹 update status API call
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  // 🔹 update mentor status
+  const handleStatusChange = async (id: string, status: string) => {
     try {
-      const endpoint =
-        newStatus === "approved" ? "approve-request" : "reject-request";
-
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      await axios.put(
-        `http://localhost:9999/api/admin/${endpoint}/${id}`,
-        {},
+      await axios.patch(
+        `http://localhost:9999/api/admin/mentors/${id}/status`,
+        { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setRequests((prev) =>
-        newStatus === "rejected"
-          ? prev.filter((req) => req._id !== id)
+        status === "rejected"
+          ? prev.filter((req) => req._id !== id) // remove rejected mentors
           : prev.map((req) =>
-              req._id === id ? { ...req, status: newStatus } : req
+              req._id === id ? { ...req, status } : req
             )
       );
     } catch (error) {
@@ -81,8 +73,7 @@ const RequestsPage = () => {
     }
   };
 
-  // 🔹 dropdown inside each card
-  const StatusDropdown = ({ request }: { request: MentorRequest }) => {
+  const StatusDropdown = ({ request }: { request: Mentor }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentStatus, setCurrentStatus] = useState(request.status);
 
@@ -157,36 +148,25 @@ const RequestsPage = () => {
     );
   };
 
-  // 🔹 filter requests
   const filteredRequests = requests.filter(
     (request) =>
-      request.mentorId.fullName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      request.mentorId.email
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      request.mentorId.currentRole
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      request.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.currentRole.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-none mx-auto p-6">
-        {/* 🔹 Header */}
+        {/* Header */}
         <div className="bg-[#4F46E5] rounded-2xl p-8 mb-6 text-white shadow-sm">
-          <div className="flex items-center space-x-4">
-            <div>
-              <h1 className="text-3xl font-bold">Mentor Requests</h1>
-              <p className="text-white text-opacity-90 mt-1">
-                Total Requests: {filteredRequests.length}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold">Mentor Requests</h1>
+          <p className="text-white text-opacity-90 mt-1">
+            Total Pending: {filteredRequests.length}
+          </p>
         </div>
 
-        {/* 🔹 Search Bar */}
+        {/* Search Bar */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -200,28 +180,24 @@ const RequestsPage = () => {
           </div>
         </div>
 
-        {/* 🔹 Request Cards */}
+        {/* Request Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRequests.map((request) => (
             <div
               key={request._id}
-              onClick={() =>
-                router.push(`/Admin/Request/${request.mentorId._id}`)
-              }
+              onClick={() => router.push(`/Admin/Request/${request._id}`)}
               className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg hover:border-[#4F46E5] hover:border-opacity-30 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-[#4F46E5] rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {request.mentorId.fullName.charAt(0).toUpperCase()}
+                    {request.fullName.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 text-lg group-hover:text-[#4F46E5] transition-colors">
-                      {request.mentorId.fullName}
+                      {request.fullName}
                     </h3>
-                    <p className="text-gray-600 text-sm">
-                      {request.mentorId.currentRole}
-                    </p>
+                    <p className="text-gray-600 text-sm">{request.currentRole}</p>
                   </div>
                 </div>
 
@@ -236,29 +212,26 @@ const RequestsPage = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center space-x-2 text-gray-600">
                   <Mail size={16} className="text-[#4F46E5]" />
-                  <span className="text-sm">{request.mentorId.email}</span>
+                  <span className="text-sm">{request.email}</span>
                 </div>
 
                 <div className="flex items-center space-x-2 text-gray-600">
                   <Calendar size={16} className="text-[#4F46E5]" />
                   <span className="text-sm">
-                    Applied on{" "}
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    Applied on {new Date(request.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
-                  Status:
-                </span>
+                <span className="text-sm font-medium text-gray-700">Status:</span>
                 <StatusDropdown request={request} />
               </div>
             </div>
           ))}
         </div>
 
-        {/* 🔹 Empty State */}
+        {/* Empty State */}
         {filteredRequests.length === 0 && (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-[#4F46E5] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -272,31 +245,6 @@ const RequestsPage = () => {
             </p>
           </div>
         )}
-
-        {/* 🔹 Pagination */}
-        <div className="flex justify-center items-center space-x-4 mt-8">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition"
-          >
-            Previous
-          </button>
-
-          <span className="text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
-
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition"
-          >
-            Next
-          </button>
-        </div>
       </div>
     </div>
   );
